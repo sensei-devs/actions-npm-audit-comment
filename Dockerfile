@@ -9,4 +9,6 @@ RUN cd /opt/action-files/dist && \
 
 COPY entrypoint.sh /opt/action-files/entrypoint.sh
 
+WORKDIR /opt/action-files/dist
+
 ENTRYPOINT [ "/opt/action-files/entrypoint.sh" ]
