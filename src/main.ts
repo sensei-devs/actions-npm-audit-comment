@@ -105,7 +105,7 @@ const formatAuditReport = (auditOutput: string, projectName: string): string => 
         const auditData: AuditData = JSON.parse(auditOutput);
         
         if (!auditData.vulnerabilities || Object.keys(auditData.vulnerabilities).length === 0) {
-            return "✅ **No vulnerabilities found!** Your dependencies are secure.";
+            return `✅ **No vulnerabilities found in ${projectName}** Your dependencies are secure.`;
         }
 
         const vulnerabilities = auditData.vulnerabilities;
