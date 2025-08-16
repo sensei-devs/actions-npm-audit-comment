@@ -58,19 +58,19 @@ var main = function () { return __awaiter(void 0, void 0, void 0, function () {
             auditJson += chunk;
         });
         stdin.on('end', function () { return __awaiter(void 0, void 0, void 0, function () {
-            var message, github_token, pull_request_number;
+            var message, formattedMessage, github_token, pull_request_number;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        console.log(auditJson);
                         message = auditJson;
+                        formattedMessage = formatAuditReport(message);
                         github_token = core_1.getInput('github_token');
                         if (github_1.context.payload.pull_request == null) {
                             core_1.setFailed('No pull request found.');
                             return [2 /*return*/];
                         }
                         pull_request_number = github_1.context.payload.pull_request.number;
-                        return [4 /*yield*/, createCommentOnPr(github_1.context.repo, pull_request_number, message, github_token)];
+                        return [4 /*yield*/, createCommentOnPr(github_1.context.repo, pull_request_number, formattedMessage, github_token)];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -93,10 +93,97 @@ var createCommentOnPr = function (repoContext, prNumber, message, token) { retur
                 return [3 /*break*/, 3];
             case 2:
                 error_1 = _a.sent();
-                core_1.setFailed(error_1.message);
+                core_1.setFailed(error_1 instanceof Error ? error_1.message : 'Unknown error occurred');
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
         }
     });
 }); };
+var formatAuditReport = function (auditOutput) {
+    var _a, _b;
+    try {
+        var auditData = JSON.parse(auditOutput);
+        if (!auditData.vulnerabilities || Object.keys(auditData.vulnerabilities).length === 0) {
+            return "✅ **No vulnerabilities found!** Your dependencies are secure.";
+        }
+        var vulnerabilities = auditData.vulnerabilities;
+        var metadata = ((_a = auditData.metadata) === null || _a === void 0 ? void 0 : _a.vulnerabilities) || {};
+        var report_1 = "## 🔍 NPM Audit Report\n\n";
+        // Summary table
+        report_1 += "### 📊 Summary\n\n";
+        report_1 += "| Severity | Count |\n";
+        report_1 += "|----------|-------|\n";
+        if (metadata.critical > 0)
+            report_1 += "| \uD83D\uDD34 Critical | " + metadata.critical + " |\n";
+        if (metadata.high > 0)
+            report_1 += "| \uD83D\uDFE0 High | " + metadata.high + " |\n";
+        if (metadata.moderate > 0)
+            report_1 += "| \uD83D\uDFE1 Moderate | " + metadata.moderate + " |\n";
+        if (metadata.low > 0)
+            report_1 += "| \uD83D\uDFE2 Low | " + metadata.low + " |\n";
+        if (metadata.info > 0)
+            report_1 += "| \u2139\uFE0F Info | " + metadata.info + " |\n";
+        report_1 += "| **Total** | **" + (metadata.total || 0) + "** |\n\n";
+        // Detailed vulnerabilities table
+        report_1 += "### 🚨 Vulnerability Details\n\n";
+        report_1 += "| Package | Severity | Current Range | Fix Available | Description |\n";
+        report_1 += "|---------|----------|---------------|---------------|-------------|\n";
+        Object.entries(vulnerabilities).forEach(function (_a) {
+            var packageName = _a[0], vuln = _a[1];
+            var severity = getSeverityEmoji(vuln.severity);
+            var fixAvailable = vuln.fixAvailable ?
+                (typeof vuln.fixAvailable === 'object' ?
+                    "\u2705 v" + vuln.fixAvailable.version :
+                    '✅ Yes') :
+                '❌ No';
+            var description = getVulnerabilityDescription(vuln);
+            var range = vuln.range || 'N/A';
+            report_1 += "| `" + packageName + "` | " + severity + " | `" + range + "` | " + fixAvailable + " | " + description + " |\n";
+        });
+        report_1 += "\n";
+        // Fix command
+        if (Object.values(vulnerabilities).some(function (vuln) { return vuln.fixAvailable; })) {
+            report_1 += "### 🔧 Recommended Action\n\n";
+            report_1 += "Run the following command to fix vulnerabilities:\n";
+            report_1 += "```bash\n";
+            report_1 += "npm audit fix\n";
+            report_1 += "```\n\n";
+        }
+        // Dependencies summary
+        if ((_b = auditData.metadata) === null || _b === void 0 ? void 0 : _b.dependencies) {
+            var deps = auditData.metadata.dependencies;
+            report_1 += "### 📦 Dependencies Overview\n\n";
+            report_1 += "- **Total packages**: " + (deps.total || 0) + "\n";
+            report_1 += "- **Production**: " + (deps.prod || 0) + "\n";
+            report_1 += "- **Development**: " + (deps.dev || 0) + "\n";
+        }
+        return report_1;
+    }
+    catch (error) {
+        console.error('Failed to parse audit output:', error);
+        return "## \u26A0\uFE0F NPM Audit Report (Raw Output)\n\n```\n" + auditOutput + "\n```";
+    }
+};
+var getSeverityEmoji = function (severity) {
+    switch (severity === null || severity === void 0 ? void 0 : severity.toLowerCase()) {
+        case 'critical': return '🔴 Critical';
+        case 'high': return '🟠 High';
+        case 'moderate': return '🟡 Moderate';
+        case 'low': return '🟢 Low';
+        case 'info': return 'ℹ️ Info';
+        default: return "\u26AA " + (severity || 'Unknown');
+    }
+};
+var getVulnerabilityDescription = function (vuln) {
+    if (vuln.via && Array.isArray(vuln.via)) {
+        var directVuln = vuln.via.find(function (v) { return typeof v === 'object' && 'title' in v; });
+        if (directVuln) {
+            return directVuln.title.substring(0, 100) + (directVuln.title.length > 100 ? '...' : '');
+        }
+    }
+    if (vuln.via && vuln.via.length > 0) {
+        return "Vulnerable via: " + (Array.isArray(vuln.via) ? vuln.via.filter(function (v) { return typeof v === 'string'; }).join(', ') : vuln.via);
+    }
+    return 'No description available';
+};
 main();
