@@ -49,7 +49,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = require("@actions/core");
 var github_1 = require("@actions/github");
-var main = function () { return __awaiter(void 0, void 0, void 0, function () {
+var main = function (projectName) { return __awaiter(void 0, void 0, void 0, function () {
     var stdin, auditJson;
     return __generator(this, function (_a) {
         stdin = process.openStdin();
@@ -63,7 +63,7 @@ var main = function () { return __awaiter(void 0, void 0, void 0, function () {
                 switch (_a.label) {
                     case 0:
                         message = auditJson;
-                        formattedMessage = formatAuditReport(message);
+                        formattedMessage = formatAuditReport(message, projectName);
                         github_token = core_1.getInput('github_token');
                         if (github_1.context.payload.pull_request == null) {
                             core_1.setFailed('No pull request found.');
@@ -99,7 +99,7 @@ var createCommentOnPr = function (repoContext, prNumber, message, token) { retur
         }
     });
 }); };
-var formatAuditReport = function (auditOutput) {
+var formatAuditReport = function (auditOutput, projectName) {
     var _a, _b;
     try {
         var auditData = JSON.parse(auditOutput);
@@ -108,7 +108,7 @@ var formatAuditReport = function (auditOutput) {
         }
         var vulnerabilities = auditData.vulnerabilities;
         var metadata = ((_a = auditData.metadata) === null || _a === void 0 ? void 0 : _a.vulnerabilities) || {};
-        var report_1 = "## 🔍 NPM Audit Report\n\n";
+        var report_1 = "## 🔍 NPM Audit Report for: " + projectName + "\n\n";
         // Summary table
         report_1 += "### 📊 Summary\n\n";
         report_1 += "| Severity | Count |\n";
@@ -186,5 +186,4 @@ var getVulnerabilityDescription = function (vuln) {
     }
     return 'No description available';
 };
-// main();
-console.log(process.argv[2]);
+main(process.argv[2]);
