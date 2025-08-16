@@ -54,7 +54,7 @@ interface AuditData {
     };
 }
 
-const main = async () => {
+const main = async (projectName: string) => {
     const stdin = process.openStdin();
 
     let auditJson = "";
@@ -65,7 +65,7 @@ const main = async () => {
 
     stdin.on('end', async (): Promise<void> => {
         const message = auditJson;
-        const formattedMessage = formatAuditReport(message);
+        const formattedMessage = formatAuditReport(message, projectName);
         
         // For testing, log to console
         // console.log('START OF BODY');
@@ -100,7 +100,7 @@ const createCommentOnPr = async (repoContext: { owner: string, repo: string }, p
     }
 }
 
-const formatAuditReport = (auditOutput: string): string => {
+const formatAuditReport = (auditOutput: string, projectName: string): string => {
     try {
         const auditData: AuditData = JSON.parse(auditOutput);
         
@@ -111,7 +111,7 @@ const formatAuditReport = (auditOutput: string): string => {
         const vulnerabilities = auditData.vulnerabilities;
         const metadata = auditData.metadata?.vulnerabilities || {};
         
-        let report = "## 🔍 NPM Audit Report\n\n";
+        let report = "## 🔍 NPM Audit Report for: " + projectName + "\n\n";
         
         // Summary table
         report += "### 📊 Summary\n\n";
@@ -197,4 +197,4 @@ const getVulnerabilityDescription = (vuln: Vulnerability): string => {
     return 'No description available';
 }
 
-main();
+main(process.argv[2]);

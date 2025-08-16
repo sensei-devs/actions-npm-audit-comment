@@ -186,4 +186,5 @@ var getVulnerabilityDescription = function (vuln) {
     }
     return 'No description available';
 };
-main();
+// main();
+console.log(process.argv[2]);
