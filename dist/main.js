@@ -104,7 +104,7 @@ var formatAuditReport = function (auditOutput, projectName) {
     try {
         var auditData = JSON.parse(auditOutput);
         if (!auditData.vulnerabilities || Object.keys(auditData.vulnerabilities).length === 0) {
-            return "✅ **No vulnerabilities found!** Your dependencies are secure.";
+            return "\u2705 **No vulnerabilities found in " + projectName + "** Your dependencies are secure.";
         }
         var vulnerabilities = auditData.vulnerabilities;
         var metadata = ((_a = auditData.metadata) === null || _a === void 0 ? void 0 : _a.vulnerabilities) || {};
