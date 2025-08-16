@@ -11,4 +11,6 @@ COPY entrypoint.sh /opt/action-files/entrypoint.sh
 
 WORKDIR /opt/action-files/dist
 
+RUN apk add --no-cache jq
+
 ENTRYPOINT [ "/opt/action-files/entrypoint.sh" ]
